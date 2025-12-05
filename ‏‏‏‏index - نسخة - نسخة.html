@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام الموارد البشرية V29 - النسخة الكاملة والمستقرة</title>
+    
+    <!-- مكتبات خارجية -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+        
+        body { 
+            font-family: 'Cairo', sans-serif; 
+            background-color: #f1f5f9; 
+            color: #1e293b; 
+            font-size: 14px; 
+            overflow-x: hidden; /* منع التمرير الأفقي للصفحة */
+        }
+        
+        .hidden { display: none !important; }
+        
+        /* --- تصميم الجداول المتجاوب --- */
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            overflow-x: auto; /* شريط تمرير للجدول فقط */
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        .grid-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            min-width: 1200px; /* ضمان عرض الأعمدة بشكل صحيح */
+            table-layout: auto; 
+        }
+        
+        .grid-table th { 
+            background: #1e293b; 
+            color: white; 
+            padding: 14px; 
+            font-size: 0.9rem; 
+            white-space: nowrap; 
+            text-align: center;
+            border-bottom: 2px solid #334155;
+        }
+        
+        .grid-table td { 
+            padding: 10px; 
+            border-bottom: 1px solid #e2e8f0; 
+            vertical-align: middle; 
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        .grid-table tr:last-child td { border-bottom: none; }
+        .grid-table tr:hover td { background-color: #f8fafc; }
+        
+        /* تنسيق الأعمدة الخاصة */
+        .col-name { min-width: 250px; text-align: right !important; font-weight: bold; }
+        .col-reason { min-width: 200px; text-align: right !important; }
+        
+        /* --- حقول الإدخال --- */
+        .input-field { 
+            width: 100%; 
+            min-width: 100px;
+            padding: 10px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 8px; 
+            outline: none; 
+            transition: all 0.2s; 
+            background-color: #fff;
+            font-size: 0.9rem;
+        }
+        
+        .input-field:focus { 
+            border-color: #2563eb; 
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); 
+        }
+        
+        .input-field.error { 
+            border-color: #ef4444; 
+            background-color: #fef2f2; 
+        }
+        
+        .input-field:disabled {
+            background-color: #f1f5f9;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        /* --- الأزرار --- */
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        
+        .btn-primary { 
+            background: #2563eb; 
+            color: white; 
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); 
+        }
+        .btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); }
+        
+        .btn-secondary { 
+            background: #f8fafc; 
+            border: 1px solid #cbd5e1; 
+            color: #475569; 
+        }
+        .btn-secondary:hover { background: #e2e8f0; }
+        
+        .btn-danger { background: #fee2e2; color: #dc2626; }
+        .btn-danger:hover { background: #fecaca; }
+
+        /* --- التبويبات --- */
+        .tab-btn { 
+            padding: 12px 24px; 
+            font-weight: 700; 
+            color: #64748b; 
+            border-bottom: 3px solid transparent; 
+            transition: 0.3s; 
+            background: transparent;
+        }
+        .tab-btn:hover { color: #2563eb; background: #f8fafc; }
+        .tab-btn.active { 
+            color: #2563eb; 
+            border-color: #2563eb; 
+            background: #eff6ff; 
+            border-radius: 8px 8px 0 0; 
+        }
+
+        /* --- مؤشر التحميل --- */
+        .loader { 
+            width: 24px; height: 24px; 
+            border: 3px solid #e2e8f0; 
+            border-top-color: #2563eb; 
+            border-radius: 50%; 
+            animation: spin 1s linear infinite; 
+            display: inline-block;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* --- شريط الإحصائيات وزر الحفظ العائم --- */
+        .stats-bar {
+            display: flex; gap: 10px; flex-wrap: wrap;
+            background: #f8fafc; padding: 10px; 
+            border-radius: 10px; border: 1px solid #e2e8f0;
+            margin-bottom: 15px;
+        }
+        .stat-item {
+            background: white; padding: 6px 12px; 
+            border-radius: 6px; font-weight: bold; font-size: 0.85rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;
+        }
+        
+        .floating-save {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: #10b981; color: white; 
+            padding: 14px 30px; border-radius: 50px; 
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+            font-weight: bold; font-size: 1rem; cursor: pointer; z-index: 1000;
+            display: flex; gap: 10px; align-items: center;
+            animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: transform 0.2s;
+        }
+        .floating-save:hover { transform: translateX(-50%) scale(1.05); }
+        @keyframes slideUp { from { transform: translate(-50%, 150%); } to { transform: translate(-50%, 0); } }
+
+        /* --- تحسينات للموبايل --- */
+        @media (max-width: 768px) {
+            .input-field { font-size: 16px; /* منع التكبير التلقائي في iOS */ }
+            .grid-table th, .grid-table td { padding: 8px; font-size: 0.8rem; }
+            .btn { padding: 8px 16px; font-size: 0.9rem; }
+            #dashboardSection .grid { grid-template-columns: 1fr; }
+            .col-name { min-width: 180px; }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center min-h-screen p-2 md:p-6">
+
+    <div class="w-full max-w-[99%] bg-white rounded-3xl shadow-2xl overflow-hidden min-h-[90vh] flex flex-col border border-slate-200 relative">
+        
+        <!-- Header -->
+        <div class="bg-slate-900 text-white p-5 flex flex-wrap justify-between items-center shadow-lg z-20 gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center border border-white/10 shadow-inner">
+                    <i class="fas fa-shield-alt text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-xl md:text-2xl tracking-wide">نظام الموارد البشرية <span class="bg-blue-500 text-[10px] px-2 py-0.5 rounded-full ml-1 align-middle">V29</span></h1>
+                    <p id="headerSubtitle" class="text-xs text-slate-400 mt-1 font-mono">جاري التحميل...</p>
+                </div>
+            </div>
+            <button id="logoutBtn" onclick="logout()" class="hidden bg-slate-800 hover:bg-red-600 border border-slate-600 hover:border-red-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-lg">
+                <i class="fas fa-sign-out-alt"></i> خروج
+            </button>
+        </div>
+
+        <div class="flex-1 bg-slate-50 relative overflow-hidden flex flex-col">
+            
+            <!-- Login Section -->
+            <div id="loginSection" class="absolute inset-0 flex items-center justify-center z-50 bg-slate-50/95 backdrop-blur-sm p-4 transition-all duration-500">
+                <div class="bg-white p-10 rounded-3xl shadow-2xl border border-slate-200 w-full max-w-sm text-center transform hover:scale-[1.01] transition">
+                    <div class="mb-8 relative">
+                        <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto border-4 border-white shadow-md">
+                            <i class="fas fa-fingerprint text-4xl text-blue-600"></i>
+                        </div>
+                    </div>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">تسجيل الدخول</h2>
+                    <p class="text-slate-400 text-sm mb-6">يرجى إدخال بياناتك للمتابعة</p>
+                    <div class="space-y-4">
+                        <input type="text" id="loginCode" class="input-field text-center text-lg font-mono" placeholder="الرمز الوظيفي (E001)">
+                        <input type="number" id="loginFP" class="input-field text-center text-lg font-mono" placeholder="رقم البصمة">
+                        <button onclick="performLogin()" id="btnLogin" class="w-full btn btn-primary justify-center py-3 text-lg shadow-lg">
+                            <span>دخول النظام</span> <i class="fas fa-arrow-left"></i>
+                        </button>
+                    </div>
+                    <p id="loginMsg" class="text-red-500 text-sm font-bold mt-6 min-h-[20px]"></p>
+                </div>
+            </div>
+
+            <!-- Dashboard Section -->
+            <div id="dashboardSection" class="hidden p-6 md:p-10 overflow-y-auto h-full">
+                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                    <!-- Cards -->
+                    <div onclick="openBulkForm('fine')" id="btnFine" class="hidden cursor-pointer bg-white border-b-4 border-red-500 p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition group">
+                        <div class="p-3 bg-red-50 rounded-xl text-red-500 w-fit mb-4 group-hover:bg-red-100 transition"><i class="fas fa-gavel text-3xl"></i></div>
+                        <h3 class="font-bold text-xl text-slate-800">غرامات وتنبيهات</h3>
+                        <p class="text-xs text-slate-400 mt-1">تسجيل العقوبات الإدارية</p>
+                    </div>
+
+                    <div onclick="openBulkForm('bonus')" id="btnBonus" class="hidden cursor-pointer bg-white border-b-4 border-emerald-500 p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition group">
+                        <div class="p-3 bg-emerald-50 rounded-xl text-emerald-500 w-fit mb-4 group-hover:bg-emerald-100 transition"><i class="fas fa-gift text-3xl"></i></div>
+                        <h3 class="font-bold text-xl text-slate-800">مكافآت وحوافز</h3>
+                        <p class="text-xs text-slate-400 mt-1">تسجيل المكافآت والبشاشة</p>
+                    </div>
+
+                    <div onclick="openBulkForm('ratio')" id="btnRatio" class="hidden cursor-pointer bg-white border-b-4 border-purple-500 p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition group">
+                        <div class="p-3 bg-purple-50 rounded-xl text-purple-500 w-fit mb-4 group-hover:bg-purple-100 transition"><i class="fas fa-chart-pie text-3xl"></i></div>
+                        <h3 class="font-bold text-xl text-slate-800">النسب</h3>
+                        <p class="text-xs text-slate-400 mt-1">تسجيل العمولات</p>
+                    </div>
+
+                    <div onclick="openMyReceived()" class="cursor-pointer bg-white border-b-4 border-blue-500 p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition group">
+                        <div class="p-3 bg-blue-50 rounded-xl text-blue-500 w-fit mb-4 group-hover:bg-blue-100 transition"><i class="fas fa-id-card text-3xl"></i></div>
+                        <h3 class="font-bold text-xl text-slate-800">ملفي الشخصي</h3>
+                        <p class="text-xs text-slate-400 mt-1">الدوام والوارد</p>
+                    </div>
+
+                    <div onclick="openMyAdded()" class="cursor-pointer bg-white border-b-4 border-orange-500 p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition group">
+                        <div class="p-3 bg-orange-50 rounded-xl text-orange-500 w-fit mb-4 group-hover:bg-orange-100 transition"><i class="fas fa-history text-3xl"></i></div>
+                        <h3 class="font-bold text-xl text-slate-800">سجل إضافاتي</h3>
+                        <p class="text-xs text-slate-400 mt-1">ما قمت بإدخاله</p>
+                    </div>
+
+                    <div onclick="openHRPortal()" id="btnHR" class="hidden cursor-pointer bg-slate-800 text-white p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition md:col-span-3 lg:col-span-2 flex items-center justify-center gap-6 group">
+                        <div class="p-4 bg-slate-700 rounded-full group-hover:bg-slate-600 transition"><i class="fas fa-users-cog text-3xl"></i></div>
+                        <div>
+                            <h3 class="font-bold text-2xl">بوابة الموارد البشرية</h3>
+                            <p class="text-slate-400 text-sm mt-1">إدارة الاعتراضات والمتابعة والتقارير</p>
+                        </div>
+                    </div>
+
+                    <div onclick="openSettings()" id="btnAdmin" class="hidden cursor-pointer bg-slate-700 text-white p-6 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition flex items-center justify-center gap-4 group">
+                        <div class="p-3 bg-slate-600 rounded-full group-hover:bg-slate-500 transition"><i class="fas fa-tools text-2xl"></i></div>
+                        <div><h3 class="font-bold text-xl">الإعدادات</h3><p class="text-slate-400 text-xs">إدارة الصلاحيات</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bulk Add Section -->
+            <div id="bulkSection" class="hidden flex flex-col h-full p-4 md:p-6">
+                <div class="flex flex-wrap justify-between items-center mb-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200 gap-3">
+                    <div class="flex items-center gap-4">
+                        <button onclick="showDashboard()" class="w-10 h-10 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition"><i class="fas fa-arrow-right"></i></button>
+                        <div>
+                            <h2 class="font-bold text-2xl text-slate-800" id="bulkTitle">...</h2>
+                            <p class="text-xs text-slate-500">إدخال متعدد</p>
+                        </div>
+                    </div>
+                    <button onclick="addRow()" class="btn btn-secondary text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-200"><i class="fas fa-plus-circle"></i> إضافة صف جديد</button>
+                </div>
+                
+                <div class="flex-1 table-container">
+                    <table class="grid-table" id="bulkTable">
+                        <thead>
+                            <tr>
+                                <th class="w-10">#</th>
+                                <th class="w-24">البصمة</th>
+                                <th class="col-name">الاسم الكامل</th>
+                                <th class="w-32">النوع</th>
+                                <th class="w-28">المبلغ</th>
+                                <th class="min-w-[250px]">السبب</th>
+                                <th class="w-32 col-class">تصنيف عام</th>
+                                <th class="w-32 col-class">تصنيف خاص</th>
+                                <th class="w-40">الجروب المستهدف</th>
+                                <th class="w-40 bg-slate-600 text-white">وقت الاستحقاق</th>
+                                <th class="w-40 bg-amber-600 text-white">وقت الإرسال</th>
+                                <th class="w-24">أدوات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gridBody"></tbody>
+                    </table>
+                    <div id="emptyState" class="hidden flex flex-col items-center justify-center h-64 text-slate-300">
+                        <i class="fas fa-file-signature text-5xl mb-4 opacity-30"></i>
+                        <p class="text-lg font-bold">القائمة فارغة</p>
+                        <p class="text-sm">ابدأ بإضافة صفوف جديدة</p>
+                    </div>
+                </div>
+                
+                <div class="mt-4 flex justify-end pt-4 border-t border-slate-200 bg-white p-4 rounded-b-xl shadow-lg z-10">
+                    <button id="btnSubmitBulk" onclick="submitBulk()" class="btn btn-primary text-lg px-8 py-3 shadow-xl hover:shadow-2xl">
+                        <span>حفظ وإرسال البيانات</span> <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- HR Portal Section -->
+            <div id="hrSection" class="hidden flex flex-col h-full p-4">
+                <div class="flex flex-col gap-3 mb-3">
+                    <!-- Tabs -->
+                    <div class="flex justify-between items-center bg-white p-2 rounded-xl border shadow-sm overflow-x-auto no-scrollbar">
+                        <div class="flex items-center gap-2 min-w-max">
+                            <button onclick="showDashboard()" class="btn btn-secondary px-3"><i class="fas fa-home"></i></button>
+                            <div class="h-6 w-px bg-slate-300 mx-2"></div>
+                            <button onclick="switchHRTab('objections')" id="tabObj" class="tab-btn active"><i class="fas fa-gavel"></i> الاعتراضات</button>
+                            <button onclick="switchHRTab('monitoring')" id="tabMon" class="tab-btn"><i class="fas fa-eye"></i> المتابعة والفرز</button>
+                            <button onclick="switchHRTab('requests')" id="tabReq" class="tab-btn"><i class="fas fa-tasks"></i> طلبات التعديل</button>
+                            <button onclick="switchHRTab('tracker')" id="tabTrack" class="tab-btn"><i class="fas fa-search"></i> الملف الشامل</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats Bar -->
+                    <div id="statsContainer" class="hidden stats-bar"></div>
+
+                    <!-- Filter Area -->
+                    <div id="monFilters" class="hidden bg-white p-4 rounded-xl border shadow-sm flex flex-wrap gap-4 items-end">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-500 mb-1">من تاريخ</label>
+                            <input type="date" id="fDate1" class="input-field w-36 py-1.5 font-mono text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-500 mb-1">إلى تاريخ</label>
+                            <input type="date" id="fDate2" class="input-field w-36 py-1.5 font-mono text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-500 mb-1">التصنيف الخاص (للتكرار)</label>
+                            <select id="fClass" class="input-field w-48 py-1.5 font-bold text-blue-800 bg-blue-50 border-blue-200">
+                                <option value="">-- الكل --</option>
+                            </select>
+                        </div>
+                        <button onclick="loadMonitoringFiltered()" class="btn btn-primary py-2 text-sm shadow-md">
+                            <i class="fas fa-filter"></i> تطبيق الفلتر
+                        </button>
+                    </div>
+                    
+                    <div class="bg-white p-3 rounded-xl border shadow-sm flex gap-3 items-center">
+                        <i class="fas fa-search text-slate-400"></i>
+                        <input type="text" id="tableSearch" onkeyup="searchTable()" placeholder="بحث سريع في الجدول الحالي..." class="input-field border-none shadow-none bg-transparent">
+                    </div>
+                </div>
+
+                <!-- Table Area -->
+                <div class="flex-1 table-container relative bg-slate-50/50">
+                    <div id="trackerInputDiv" class="hidden p-6 bg-slate-50 border-b flex justify-center gap-3 shadow-sm">
+                        <input type="number" id="trackFP" class="input-field w-64 text-center font-bold text-lg shadow-inner" placeholder="أدخل رقم البصمة">
+                        <button onclick="loadEmployeeTracker()" class="btn btn-primary px-6">بحث شامل</button>
+                    </div>
+                    
+                    <table class="grid-table" id="activeTable">
+                        <thead id="activeThead"></thead>
+                        <tbody id="activeTbody"></tbody>
+                    </table>
+                    
+                    <div id="monPlaceholder" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-white/90 z-10 backdrop-blur-sm">
+                        <div class="p-8 bg-white rounded-3xl shadow-2xl text-center border">
+                            <i class="fas fa-chart-line text-6xl text-blue-200 mb-4 animate-pulse"></i>
+                            <p class="text-slate-600 font-bold text-lg">يرجى تحديد التاريخ والضغط على "تطبيق الفلتر"</p>
+                            <p class="text-slate-400 text-sm">للحصول على أحدث البيانات والإحصائيات</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Floating Save Button -->
+            <div id="batchSaveBtn" class="hidden floating-save" onclick="saveBatchUpdates()">
+                <i class="fas fa-save text-xl"></i> 
+                <span>حفظ كافة التغييرات (<span id="batchCount" class="bg-white text-green-600 px-2 rounded-full text-sm">0</span>)</span>
+            </div>
+
+            <!-- Profile / History Section -->
+            <div id="userHistorySection" class="hidden flex flex-col h-full p-4">
+                <div class="flex justify-between items-center mb-4 bg-white p-4 rounded-xl border shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <button onclick="showDashboard()" class="btn btn-secondary w-10 h-10 p-0 flex items-center justify-center rounded-lg"><i class="fas fa-arrow-right"></i></button>
+                        <h2 class="font-bold text-xl text-slate-800" id="historyTitle">...</h2>
+                    </div>
+                    <div class="text-sm text-slate-500 font-mono" id="profileDate"></div>
+                </div>
+                
+                <div class="flex-1 table-container overflow-y-auto">
+                    <div id="attDiv" class="hidden mb-6 p-5 bg-blue-50/50 border-b border-blue-100">
+                        <h3 class="font-bold text-blue-800 mb-3 flex items-center gap-2"><i class="fas fa-clock"></i> سجل الدوام والحضور</h3>
+                        <table class="w-full text-sm text-center bg-white border border-blue-200 rounded-lg overflow-hidden shadow-sm">
+                            <thead class="bg-blue-100 text-blue-900 font-bold">
+                                <tr>
+                                    <th class="p-3">تاريخ الدخول</th>
+                                    <th>وقت الدخول</th>
+                                    <th>وقت الخروج</th>
+                                    <th>الوقت الفعلي</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attBody" class="text-slate-700"></tbody>
+                        </table>
+                    </div>
+                    
+                    <h3 class="font-bold text-slate-700 px-4 pt-4 mb-2">سجل العمليات</h3>
+                    <table class="grid-table" id="historyTable">
+                        <thead id="historyThead"></thead>
+                        <tbody id="historyTbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="settingsSection" class="hidden flex flex-col h-full p-4">
+                <div class="flex justify-between items-center mb-4 bg-white p-4 rounded-xl shadow-sm border">
+                    <button onclick="showDashboard()" class="btn btn-secondary"><i class="fas fa-arrow-right"></i> لوحة التحكم</button>
+                    <button onclick="openAddUserModal()" class="btn btn-primary bg-green-600 hover:bg-green-700 border-green-600 shadow-lg"><i class="fas fa-user-plus"></i> إضافة موظف جديد</button>
+                </div>
+                <div class="flex-1 table-container"><table class="grid-table" id="usersTable"><thead><tr><th>الرمز</th><th>البصمة</th><th>الاسم</th><th>القسم</th><th>الصلاحيات</th><th>إجراء</th></tr></thead><tbody id="usersBody"></tbody></table></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="uniModal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-3xl w-full max-w-lg shadow-2xl transform scale-100 transition-all border border-slate-200">
+            <h3 id="mTitle" class="font-bold text-2xl mb-6 border-b pb-4 text-slate-800">...</h3>
+            <div id="mContent" class="space-y-5 max-h-[70vh] overflow-y-auto custom-scrollbar p-1"></div>
+            <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-100">
+                <button onclick="closeModal()" class="px-6 py-2.5 text-slate-500 hover:bg-slate-100 rounded-xl font-bold text-sm transition">إلغاء الأمر</button>
+                <button id="mBtn" class="btn btn-primary py-2.5 px-8 shadow-lg">تنفيذ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="hidden fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-8 py-4 rounded-full shadow-2xl z-[110] flex items-center gap-4 border border-slate-700">
+        <i class="fas fa-info-circle text-blue-400 text-xl"></i> <span id="tMsg" class="font-bold text-sm"></span>
+    </div>
+
+    <script>
+        // *** رابط السيرفر المحدث ***
+        const API_URL = "https://script.google.com/macros/s/AKfycbxidK95TBzj_D-qfqoZwCTdPqe2lQYLTpyrNqal5Kpy0mvdAu-AplWniAyL7voE_LaVPg/exec";
+        
+        // متغيرات الحالة
+        let currentUser = null;
+        let currentMode = 'fine';
+        let detailsData = { mapping: {}, groups: [], followGroups: [] };
+        let tableDataCache = [];
+        let specialClassesList = new Set();
+        let batchUpdates = [];
+
+        // --- إدارة الجلسة (Session Persistence) ---
+        window.addEventListener('load', () => {
+            const savedUser = localStorage.getItem('hrUserV29');
+            if(savedUser) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    initApp(); // استعادة الجلسة مباشرة
+                } catch(e) { localStorage.removeItem('hrUserV29'); }
+            } else {
+                document.getElementById('headerSubtitle').innerText = "تسجيل الدخول مطلوب";
+            }
+        });
+
+        async function performLogin() {
+            const c = document.getElementById('loginCode').value.trim();
+            const f = document.getElementById('loginFP').value.trim();
+            
+            if(!c || !f) return showToast("يرجى إدخال البيانات كاملة", true);
+            
+            const btn = document.getElementById('btnLogin');
+            btn.innerHTML = '<span class="loader border-white border-t-transparent"></span> جاري التحقق...';
+            
+            try {
+                const r = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "login", code: c, fp: f }) });
+                const d = await r.json();
+                
+                if(d.result === "success") {
+                    currentUser = d.data; currentUser.fp = f; currentUser.code = c;
+                    localStorage.setItem('hrUserV29', JSON.stringify(currentUser)); // حفظ الجلسة
+                    initApp();
+                } else {
+                    document.getElementById('loginMsg').innerText = d.message;
+                }
+            } catch(e) { document.getElementById('loginMsg').innerText = "خطأ في الاتصال بالسيرفر"; }
+            
+            btn.innerHTML = '<span>دخول النظام</span> <i class="fas fa-arrow-left"></i>';
+        }
+
+        async function initApp() {
+            document.getElementById('headerSubtitle').innerHTML = `<span class="text-blue-300">مرحباً،</span> ${currentUser.name} | ${currentUser.section}`;
+            document.getElementById('logoutBtn').classList.remove('hidden');
+            setupPerms();
+            await loadDetails();
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+        }
+
+        function logout() {
+            if(confirm("هل تريد تسجيل الخروج؟")) {
+                localStorage.removeItem('hrUserV29');
+                location.reload();
+            }
+        }
+
+        function setupPerms() {
+            if(currentUser.perms.fine) document.getElementById('btnFine').classList.remove('hidden');
+            if(currentUser.perms.bonus) document.getElementById('btnBonus').classList.remove('hidden');
+            if(currentUser.perms.ratio) document.getElementById('btnRatio').classList.remove('hidden');
+            if(currentUser.perms.hr) document.getElementById('btnHR').classList.remove('hidden');
+            if(currentUser.perms.admin) document.getElementById('btnAdmin').classList.remove('hidden');
+        }
+
+        async function loadDetails() {
+            try {
+                const r = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "get_details" }) });
+                const d = await r.json();
+                if(d.result === "success") {
+                    detailsData = d.data;
+                    Object.values(detailsData.mapping).forEach(arr => arr.forEach(s => specialClassesList.add(s)));
+                    updateSpecialClassFilter({});
+                }
+            } catch(e) {}
+        }
+
+        // --- Bulk Form Logic ---
+        function openBulkForm(mode) {
+            currentMode = mode;
+            hideAll();
+            document.getElementById('bulkSection').classList.remove('hidden');
+            
+            const titles = {fine: "إضافة غرامات وعقوبات", bonus: "إضافة مكافآت وحوافز", ratio: "إضافة نسب وعمولات"};
+            document.getElementById('bulkTitle').innerText = titles[mode];
+            
+            document.querySelectorAll('.col-class').forEach(el => el.style.display = (mode === 'fine' ? 'table-cell' : 'none'));
+            document.getElementById('gridBody').innerHTML = "";
+            addRow(); checkEmpty();
+        }
+
+        function addRow(cloneTr = null) {
+            const tr = document.createElement('tr');
+            const idx = document.getElementById('gridBody').children.length + 1;
+            
+            let typeHTML = currentMode === 'fine' ? 
+                `<select class="input-field font-bold text-red-600 bg-red-50 type-input" onchange="checkType(this)"><option value="غرامة">غرامة مالية</option><option value="تنبيه">تنبيه إداري</option></select>` : 
+                (currentMode === 'bonus' ? `<select class="input-field text-green-600 bg-green-50 type-input"><option value="تشجيعية">تشجيعية</option><option value="بشاشة">بشاشة</option></select>` : `<input class="input-field type-input font-bold text-purple-600 bg-purple-50" value="نسبة" readonly>`);
+
+            let targetType = currentMode === 'fine' ? 'غرامة' : (currentMode === 'bonus' ? 'مكافأة' : 'نسب');
+            let grpOpts = '<option value="">-- اختر الجروب --</option>';
+            detailsData.groups.forEach(g => { if(g.type === targetType) grpOpts += `<option value="${g.id}">${g.name}</option>`; });
+
+            const nowISO = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0,16);
+
+            tr.innerHTML = `
+                <td class="text-xs text-gray-400 font-mono">${idx}</td>
+                <td><input type="number" class="input-field fp-input text-center font-mono" placeholder="123" onchange="fetchName(this)"></td>
+                <td><input type="text" class="input-field name-input font-bold text-blue-800 bg-slate-50" readonly placeholder="اسم الموظف..."></td>
+                <td>${typeHTML}</td>
+                <td><input type="number" class="input-field amount-input text-center font-bold" placeholder="0"></td>
+                <td><input type="text" class="input-field reason-input" placeholder="سبب الإضافة..."></td>
+                <td style="${currentMode==='fine'?'':'display:none'}"><select class="input-field gen-input" onchange="fillSpe(this)"><option value="">عام</option></select></td>
+                <td style="${currentMode==='fine'?'':'display:none'}"><select class="input-field spe-input"><option value="">خاص</option></select></td>
+                <td><select class="input-field grp-input">${grpOpts}</select></td>
+                <td><input type="datetime-local" class="input-field due-input text-xs" value="${nowISO}"></td>
+                <td><input type="datetime-local" class="input-field send-input text-xs" value="${nowISO}"></td>
+                <td>
+                    <div class="flex gap-2 justify-center">
+                        <button onclick="addRow(this.closest('tr'))" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg" title="تكرار الصف"><i class="fas fa-copy"></i></button>
+                        <button onclick="this.closest('tr').remove();checkEmpty()" class="text-red-500 hover:bg-red-50 p-2 rounded-lg" title="حذف"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </td>
+            `;
+            document.getElementById('gridBody').appendChild(tr);
+
+            if(currentMode === 'fine') {
+                const gen = tr.querySelector('.gen-input');
+                Object.keys(detailsData.mapping).forEach(k => gen.innerHTML += `<option value="${k}">${k}</option>`);
+                
+                if(cloneTr) {
+                    tr.querySelector('.type-input').value = cloneTr.querySelector('.type-input').value;
+                    tr.querySelector('.amount-input').value = cloneTr.querySelector('.amount-input').value;
+                    tr.querySelector('.reason-input').value = cloneTr.querySelector('.reason-input').value;
+                    tr.querySelector('.gen-input').value = cloneTr.querySelector('.gen-input').value;
+                    fillSpe(tr.querySelector('.gen-input'));
+                    tr.querySelector('.spe-input').value = cloneTr.querySelector('.spe-input').value;
+                    tr.querySelector('.grp-input').value = cloneTr.querySelector('.grp-input').value;
+                    checkType(tr.querySelector('.type-input')); // Apply logic
+                }
+            }
+            checkEmpty();
+        }
+
+        function checkType(sel) {
+            const row = sel.closest('tr');
+            const amt = row.querySelector('.amount-input');
+            if (sel.value === 'تنبيه') {
+                amt.value = 0;
+                amt.disabled = true;
+                amt.classList.add('bg-slate-100', 'cursor-not-allowed');
+            } else {
+                amt.disabled = false;
+                amt.classList.remove('bg-slate-100', 'cursor-not-allowed');
+            }
+        }
+
+        function fillSpe(gen) {
+            const spe = gen.closest('tr').querySelector('.spe-input');
+            spe.innerHTML = '<option value="">خاص</option>';
+            if(gen.value && detailsData.mapping[gen.value]) detailsData.mapping[gen.value].forEach(s => spe.innerHTML += `<option value="${s}">${s}</option>`);
+        }
+
+        async function fetchName(inp) {
+            if(!inp.value) return;
+            const row = inp.closest('tr');
+            const ni = row.querySelector('.name-input');
+            ni.value = "جاري البحث...";
+            try {
+                const r = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "get_emp_info", fp: inp.value }) });
+                const d = await r.json();
+                if(d.result === "success") { ni.value = d.data.name; row.dataset.section = d.data.section; }
+                else { ni.value = "غير موجود"; ni.classList.add('text-red-500'); }
+            } catch(e) { ni.value = "خطأ"; }
+        }
+
+        async function submitBulk() {
+            const rows = [];
+            let errorMsg = "";
+            const trs = document.querySelectorAll('#gridBody tr');
+            
+            if(trs.length === 0) return showToast("القائمة فارغة", true);
+
+            for (let i = 0; i < trs.length; i++) {
+                const tr = trs[i];
+                const fp = tr.querySelector('.fp-input').value;
+                const name = tr.querySelector('.name-input').value;
+                const type = tr.querySelector('.type-input').value;
+                const amt = parseFloat(tr.querySelector('.amount-input').value);
+                const reason = tr.querySelector('.reason-input').value;
+                const grp = tr.querySelector('.grp-input').value;
+
+                if(!fp || !name || name === "غير موجود" || !reason || !grp) {
+                    errorMsg = `الصف رقم ${i+1}: هناك بيانات ناقصة (الاسم، البصمة، السبب، أو الجروب)`; break;
+                }
+                
+                if(currentMode === 'fine') {
+                    if(type === 'غرامة' && (isNaN(amt) || amt < 1000)) { errorMsg = `الصف رقم ${i+1}: الغرامة المالية يجب أن تكون 1000 دينار أو أكثر`; break; }
+                } else {
+                     if(isNaN(amt)) { errorMsg = `الصف رقم ${i+1}: المبلغ غير صحيح`; break; }
+                }
+
+                rows.push({
+                    fp, name, section: tr.dataset.section||'', type, amount: isNaN(amt)?0:amt, reason,
+                    genClass: currentMode==='fine'?tr.querySelector('.gen-input').value:'',
+                    speClass: currentMode==='fine'?tr.querySelector('.spe-input').value:'',
+                    groupID: grp,
+                    groupName: tr.querySelector('.grp-input').selectedOptions[0]?.text||'',
+                    dueDate: tr.querySelector('.due-input').value,
+                    sendTime: tr.querySelector('.send-input').value
+                });
+            }
+
+            if(errorMsg) return showToast(errorMsg, true);
+
+            const btn = document.getElementById('btnSubmitBulk');
+            btn.innerHTML = '<span class="loader border-white border-t-transparent"></span> جاري الإرسال...';
+            btn.disabled = true;
+            
+            try {
+                const r = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "save_bulk", mode: currentMode, rows, addedBy: currentUser.name }) });
+                const d = await r.json();
+                if(d.result === "success") {
+                    showToast("تم الحفظ والإرسال بنجاح");
+                    openBulkForm(currentMode); // Reset
+                } else showToast("حدث خطأ في السيرفر", true);
+            } catch(e) { showToast("فشل الاتصال", true); }
+            
+            btn.innerHTML = '<span>حفظ وإرسال البيانات</span> <i class="fas fa-paper-plane"></i>';
+            btn.disabled = false;
+        }
+
+        // --- HR Portal Logic ---
+        function openHRPortal() { hideAll(); document.getElementById('hrSection').classList.remove('hidden'); switchHRTab('objections'); }
+        
+        function switchHRTab(t) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            ['monFilters','monPlaceholder','trackerInputDiv','statsContainer'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById('batchSaveBtn').classList.add('hidden'); 
+            batchUpdates = []; updateBatchCount();
+            
+            const th = document.getElementById('activeThead');
+            const tb = document.getElementById('activeTbody');
+            tb.innerHTML = '';
+            
+            if(t === 'objections') {
+                document.getElementById('tabObj').classList.add('active');
+                document.getElementById('statsContainer').classList.remove('hidden');
+                // عرض الاعتراضات لا يحتاج فلتر تاريخ بالضرورة
+                th.innerHTML = `<tr><th>الموظف</th><th>البيانات</th><th>السبب</th><th>الاعتراض / الصورة</th><th>التواريخ</th><th>الحالة</th><th>إجراء</th></tr>`;
+                loadMonitoringFiltered(); 
+            } else if(t === 'monitoring') {
+                document.getElementById('tabMon').classList.add('active');
+                document.getElementById('statsContainer').classList.remove('hidden');
+                document.getElementById('monFilters').classList.remove('hidden');
+                document.getElementById('monPlaceholder').classList.remove('hidden');
+                th.innerHTML = `<tr><th>تحديد</th><th>الموظف</th><th>النوع</th><th>المبلغ</th><th>السبب (تصنيف)</th><th>التواريخ</th><th>المرسل</th><th>الحالة</th><th>تكرار</th><th>حذف</th></tr>`;
+            } else if(t === 'requests') {
+                document.getElementById('tabReq').classList.add('active');
+                th.innerHTML = `<tr><th>الطلب</th><th>مقدم الطلب</th><th>نوع</th><th>الأصل</th><th>الحالة</th><th>إجراء</th></tr>`;
+                loadEditRequests();
+            } else {
+                document.getElementById('tabTrack').classList.add('active');
+                document.getElementById('trackerInputDiv').classList.remove('hidden');
+                th.innerHTML = `<tr><th>النوع</th><th>التفاصيل</th><th>التاريخ</th><th>الحالة</th></tr>`;
+            }
+        }
+
+        async function loadMonitoringFiltered() {
+            const d1 = document.getElementById('fDate1').value;
+            const d2 = document.getElementById('fDate2').value;
+            const spe = document.getElementById('fClass').value;
+            const isObj = document.getElementById('tabObj').classList.contains('active');
+            
+            // المتابعة تتطلب تحديد تاريخ، الاعتراضات لا تتطلب
+            // if(!isObj && (!d1 || !d2)) return showToast("حدد التاريخ للمتابعة", true);
+            
+            document.getElementById('monPlaceholder').classList.add('hidden');
+            document.getElementById('activeTbody').innerHTML = '<tr><td colspan="100%" class="text-center p-10"><span class="loader"></span> جاري جلب البيانات...</td></tr>';
+            
+            try {
+                const r = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "get_hr_monitoring_filtered", dateFrom: d1, dateTo: d2, speClass: spe, isObjectionOnly: isObj }) });
+                const d = await r.json();
+                
+                updateStatsBar(d.data.stats);
+                updateSpecialClassFilter(d.data.stats.specialClasses);
+                renderTable(d.data.data, isObj ? 'objections' : 'monitoring');
+            } catch(e) { document.getElementById('activeTbody').innerHTML = '<tr><td colspan="100%" class="text-center text-red-500">حدث خطأ</td></tr>'; }
+        }
+
+        function renderTable(data, type) {
+            const tb = document.getElementById('activeTbody'); tb.innerHTML = "";
+            if(!data.length) { tb.innerHTML = '<tr><td colspan="100%" class="text-center p-8 text-slate-400 font-bold">لا توجد بيانات للعرض</td></tr>'; return; }
+
+            if(type === 'monitoring') {
+                data.forEach(x => {
+                    const repBadge = x.repetitionCount > 1 ? `<span class="bg-red-100 text-red-700 px-2 py-1 rounded-lg font-bold text-xs shadow-sm">${x.repetitionCount} مرات</span>` : '<span class="text-slate-300">-</span>';
+                    const isChecked = x.isFollowed === 'نعم';
+                    const checkCell = isChecked 
+                        ? `<i class="fas fa-check-circle text-green-500 text-xl"></i>` 
+                        : `<input type="checkbox" class="w-5 h-5 cursor-pointer accent-blue-600 rounded" onchange="toggleBatch('${x.id}', '${x.sheetType}', this)">`;
+
+                    tb.innerHTML += `<tr>
+                        <td>${checkCell}</td>
+                        <td class="text-right"><b>${x.name}</b><br><span class="text-xs text-gray-400 font-mono">${x.fp}</span></td>
+                        <td>${x.type}</td>
+                        <td class="font-bold text-blue-700">${x.amount}</td>
+                        <td class="text-xs text-right">${x.reason}<br><span class="bg-blue-50 text-blue-800 px-2 rounded-full border border-blue-100">${x.speClass||'-'}</span></td>
+                        <td class="text-xs font-mono"><div class="text-amber-700">Due: ${x.dueDate}</div><div class="text-gray-500">Add: ${x.entryDate}</div></td>
+                        <td class="text-xs font-bold text-slate-600">${x.sender}</td>
+                        <td><span class="text-xs ${x.objStatus==='قيد المراجعة'?'bg-amber-100 text-amber-800':(x.objStatus==='مقبول'?'bg-green-100 text-green-800':'bg-slate-100')} px-2 py-1 rounded-lg font-bold">${x.objStatus}</span></td>
+                        <td class="text-center">${repBadge}</td>
+                        <td class="text-center"><button onclick="deleteTrans('${x.id}','${x.sheetType}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg transition"><i class="fas fa-trash"></i></button></td>
+                    </tr>`;
+                });
+            } else {
+                // Objections Table
+                data.forEach(x => {
+                    const imgBtn = x.objImg ? `<a href="${x.objImg}" target="_blank" class="inline-flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-blue-700 transition mt-2"><i class="fas fa-image"></i> عرض الصورة</a>` : '';
+                    tb.innerHTML += `<tr>
+                        <td class="text-right"><b>${x.name}</b><br><span class="text-xs text-gray-400">${x.fp}</span></td>
+                        <td>${x.amount}<br><span class="text-xs bg-slate-100 rounded px-1">${x.type}</span></td>
+                        <td class="text-xs max-w-xs text-right">${x.reason}</td>
+                        <td class="bg-amber-50 p-3 text-xs border-r-4 border-amber-400 max-w-xs text-right rounded-r-none rounded-l-lg shadow-sm">
+                           <div class="font-bold text-amber-800 mb-1">الاعتراض:</div> ${x.objReason} ${imgBtn}
+                        </td>
+                        <td class="text-xs font-mono"><div class="text-amber-700">Due: ${x.dueDate}</div><div class="text-gray-500">Add: ${x.entryDate}</div></td>
+                        <td><span class="text-xs font-bold ${x.objStatus==='قيد المراجعة'?'text-amber-600 animate-pulse':'text-slate-600'}">${x.objStatus}</span></td>
+                        <td><button onclick="hrAction('${x.id}','${x.sheetType}')" class="btn btn-primary py-1 px-4 text-xs shadow-md">قرار إداري</button></td>
+                    </tr>`;
+                });
+            }
+        }
+
+        // --- Batch Save System ---
+        function toggleBatch(id, type, checkbox) {
+            if(checkbox.checked) {
+                if(!batchUpdates.some(u => u.id === id)) batchUpdates.push({id, sheetType: type});
+            } else {
+                batchUpdates = batchUpdates.filter(u => u.id !== id);
+            }
+            updateBatchCount();
+        }
+
+        function updateBatchCount() {
+            const btn = document.getElementById('batchSaveBtn');
+            document.getElementById('batchCount').innerText = batchUpdates.length;
+            if(batchUpdates.length > 0) btn.classList.remove('hidden');
+            else btn.classList.add('hidden');
+        }
+
+        async function saveBatchUpdates() {
+            if(batchUpdates.length === 0) return;
+            const btn = document.getElementById('batchSaveBtn');
+            btn.innerHTML = '<span class="loader border-white w-5 h-5"></span> جاري الحفظ...';
+            
+            try {
+                const r = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "batch_confirm_followup", updates: batchUpdates }) });
+                const d = await r.json();
+                if(d.result === "success") {
+                    showToast(d.message);
+                    batchUpdates = []; 
+                    loadMonitoringFiltered(); 
+                } else showToast("حدث خطأ", true);
+            } catch(e) { showToast("خطأ اتصال", true); }
+        }
+
+        // --- Other Funcs ---
+        function updateStatsBar(s) {
+            document.getElementById('statsContainer').innerHTML = `
+                <div class="stat-item border-l-4 border-slate-500 text-slate-700">العدد الكلي: ${s.total}</div>
+                <div class="stat-item border-l-4 border-amber-500 text-amber-700">قيد المراجعة: ${s.pending}</div>
+                <div class="stat-item border-l-4 border-green-500 text-green-700">مقبول: ${s.accepted}</div>
+                <div class="stat-item border-l-4 border-red-500 text-red-700">مرفوض: ${s.rejected}</div>
+            `;
+        }
+        function updateSpecialClassFilter(stats) {
+            const sel = document.getElementById('fClass');
+            sel.innerHTML = '<option value="">-- الكل --</option>';
+            specialClassesList.forEach(cls => {
+                const count = stats[cls] ? ` (${stats[cls]})` : '';
+                sel.innerHTML += `<option value="${cls}">${cls}${count}</option>`;
+            });
+        }
+        
+        // --- Actions ---
+        function hrAction(id, st) {
+            let opts = '<option value="">-- اختر جروب المتابعة --</option>'; 
+            detailsData.followGroups.forEach(g => opts += `<option value="${g.id}">${g.name}</option>`);
+            
+            showModal("اتخاذ قرار إداري", `
+                <div class="bg-slate-50 p-4 rounded-xl border mb-4">
+                    <label class="block text-sm font-bold text-slate-700 mb-2">القرار النهائي:</label>
+                    <select id="aSt" class="input-field mb-3 font-bold text-blue-900" onchange="document.getElementById('gDiv').classList.toggle('hidden', this.value!=='متابعة')">
+                        <option value="">-- اختر القرار --</option>
+                        <option value="مقبول" class="text-green-600">✅ مقبول (إلغاء العقوبة)</option>
+                        <option value="مرفوض" class="text-red-600">❌ مرفوض (تثبيت العقوبة)</option>
+                        <option value="متابعة" class="text-amber-600">⚠️ إحالة للمتابعة</option>
+                    </select>
+                    
+                    <div id="gDiv" class="hidden mb-3 bg-amber-50 p-3 rounded-lg border border-amber-200 animate-fadeIn">
+                        <label class="block text-xs font-bold text-amber-800 mb-1">الجهة المستهدفة للمتابعة:</label>
+                        <select id="aGrp" class="input-field border-amber-300">${opts}</select>
+                    </div>
+                    
+                    <label class="block text-sm font-bold text-slate-700 mb-2">الرد / التوجيه:</label>
+                    <textarea id="aRes" class="input-field h-24 resize-none" placeholder="اكتب رد الموارد البشرية هنا..."></textarea>
+                </div>
+            `, async () => {
+                const status = document.getElementById('aSt').value;
+                if(!status) return alert("يجب اختيار القرار");
+                
+                await fetch(API_URL, { method: 'POST', body: JSON.stringify({ 
+                    action: "hr_action", id, sheetType: st, status: status, 
+                    response: document.getElementById('aRes').value, 
+                    hrUser: currentUser.name, 
+                    followGroupId: document.getElementById('aGrp').value 
+                }) });
+                
+                closeModal(); 
+                loadMonitoringFiltered(); 
+                showToast("تم حفظ القرار بنجاح");
+            });
+        }
+
+        async function deleteTrans(id, st) {
+            if(!confirm("هل أنت متأكد من الحذف النهائي لهذا السجل؟ لا يمكن التراجع.")) return;
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "delete_transaction", id, sheetType: st }) });
+            loadMonitoringFiltered();
+            showToast("تم الحذف");
+        }
+
+        // --- Profile Logic ---
+        async function openMyReceived() { 
+            hideAll(); document.getElementById('userHistorySection').classList.remove('hidden'); document.getElementById('historyTitle').innerText = "ملفي الشخصي";
+            
+            // 1. الدوام
+            const rA = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "get_my_attendance", fp: currentUser.fp }) }); 
+            const dA = await rA.json();
+            const attB = document.getElementById('attBody'); attB.innerHTML = "";
+            if(dA.data.length) { 
+                document.getElementById('attDiv').classList.remove('hidden'); 
+                dA.data.forEach(a => attB.innerHTML += `<tr><td class="font-mono font-bold">${a.date}</td><td class="font-mono text-green-600">${a.in}</td><td class="font-mono text-red-600">${a.out}</td><td class="font-bold bg-slate-50">${a.dur}</td></tr>`); 
+            } else document.getElementById('attDiv').classList.add('hidden');
+            
+            // 2. العمليات
+            const r = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "get_my_received", fp: currentUser.fp }) }); 
+            const d = await r.json(); renderUserTable(d.data, true);
+        }
+
+        async function openMyAdded() { 
+            hideAll(); document.getElementById('userHistorySection').classList.remove('hidden'); document.getElementById('historyTitle').innerText = "سجل إضافاتي";
+            const r = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "get_my_added", userName: currentUser.name }) }); 
+            const d = await r.json(); renderUserTable(d.data, false);
+        }
+
+        function renderUserTable(data, isRec) {
+            const tb = document.getElementById('historyTbody'); tb.innerHTML = "";
+            document.getElementById('historyThead').innerHTML = isRec ? `<tr><th>النوع</th><th>المبلغ</th><th>السبب</th><th>التاريخ</th><th>الحالة</th><th>إجراء</th></tr>` : `<tr><th>الموظف</th><th>النوع</th><th>المبلغ</th><th>التاريخ</th><th>-</th></tr>`;
+            
+            data.forEach(x => {
+                if(isRec) {
+                    const btn = (x.objStatus && x.objStatus !== "لا يوجد") 
+                        ? `<span class="bg-gray-100 text-xs p-1.5 rounded-lg border font-bold text-slate-500">تم تقديم اعتراض</span>` 
+                        : `<button onclick="objModal('${x.id}','${x.sheetType}')" class="text-blue-600 bg-blue-50 px-3 py-1 rounded-lg text-xs font-bold hover:bg-blue-100 transition">تقديم اعتراض</button>`;
+                    
+                    tb.innerHTML += `<tr>
+                        <td>${x.type}</td><td class="font-bold">${x.amount}</td>
+                        <td class="text-xs">${x.reason}</td>
+                        <td class="text-xs font-mono">${x.date}</td>
+                        <td><span class="text-xs p-1.5 bg-slate-50 rounded font-bold">${x.objStatus}</span></td>
+                        <td>${btn}</td>
+                    </tr>`;
+                } else {
+                    tb.innerHTML += `<tr><td>${x.name}</td><td>${x.type}</td><td>${x.amount}</td><td class="font-mono text-xs">${x.date}</td><td>-</td></tr>`;
+                }
+            });
+        }
+
+        function objModal(id, st) { 
+            showModal("تقديم اعتراض", `
+                <p class="text-sm text-slate-500 mb-2">يرجى كتابة سبب الاعتراض وإرفاق صورة (اختياري).</p>
+                <textarea id="oRes" class="input-field mb-3 h-24" placeholder="اكتب سبب الاعتراض هنا..."></textarea>
+                <label class="block text-xs font-bold text-slate-700 mb-1">إرفاق صورة إثبات:</label>
+                <input type="file" id="oFile" class="input-field text-xs bg-slate-50" accept="image/*">
+            `, async () => { 
+                const f = document.getElementById('oFile').files[0]; 
+                const b64 = f ? await toBase64(f) : null; 
+                
+                await fetch(API_URL, { method: 'POST', body: JSON.stringify({ 
+                    action: "submit_objection", id, sheetType: st, 
+                    reason: document.getElementById('oRes').value, imageBase64: b64 
+                }) }); 
+                
+                closeModal(); showToast("تم إرسال الاعتراض"); openMyReceived(); 
+            }); 
+        }
+
+        // --- Utils & Tools ---
+        function hideAll() { ['loginSection', 'dashboardSection', 'bulkSection', 'hrSection', 'userHistorySection', 'settingsSection'].forEach(id => document.getElementById(id).classList.add('hidden')); }
+        function showDashboard() { hideAll(); document.getElementById('dashboardSection').classList.remove('hidden'); }
+        function showToast(m, e=false) { const t=document.getElementById('toast'); document.getElementById('tMsg').innerText=m; t.classList.remove('hidden'); t.classList.toggle('bg-red-800', e); setTimeout(()=>t.classList.add('hidden'), 3000); }
+        function showModal(t, c, cb) { document.getElementById('mTitle').innerText=t; document.getElementById('mContent').innerHTML=c; document.getElementById('uniModal').classList.remove('hidden'); document.getElementById('mBtn').onclick=async()=>{const b=document.getElementById('mBtn');const old=b.innerText;b.innerText='جاري التنفيذ...';b.disabled=true;await cb();b.innerText=old;b.disabled=false;}; }
+        function closeModal() { document.getElementById('uniModal').classList.add('hidden'); }
+        function checkEmpty() { document.getElementById('emptyState').classList.toggle('hidden', document.querySelectorAll('#gridBody tr').length > 0); }
+        const toBase64 = f => new Promise((r, j) => { const rd = new FileReader(); rd.readAsDataURL(f); rd.onload = () => r(rd.result); });
+        function searchTable() { const q=document.getElementById('tableSearch').value.toLowerCase(); document.querySelectorAll('#activeTbody tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(q)?'':'none'); }
+        
+        async function loadEditRequests() { const r = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "get_edit_requests" }) }); const d = await r.json(); const tb = document.getElementById('activeTbody'); tb.innerHTML=""; d.data.forEach(x=>{ const btn=x.status==='قيد الانتظار'?`<button onclick="editAction('${x.reqId}')" class="text-purple-600 font-bold bg-purple-50 px-2 py-1 rounded">معالجة</button>`:x.status; tb.innerHTML+=`<tr><td>${x.reqId}</td><td>${x.requester}</td><td>${x.type}</td><td class="text-xs text-gray-500">${x.original}</td><td>${x.status}</td><td>${btn}</td></tr>`}); }
+        function editAction(id) { showModal("معالجة الطلب",`<select id="eSt" class="input-field"><option value="تم التنفيذ">موافقة وتنفيذ</option><option value="مرفوض">رفض الطلب</option></select>`,async()=>{ await fetch(API_URL,{method:'POST',body:JSON.stringify({action:"hr_edit_action",reqId:id,status:document.getElementById('eSt').value})}); closeModal(); loadEditRequests(); showToast("تم"); }); }
+        
+        async function loadEmployeeTracker(){ const fp=document.getElementById('trackFP').value; if(!fp) return showToast("أدخل البصمة",true); const r=await fetch(API_URL,{method:'POST',body:JSON.stringify({action:"get_emp_full_profile",searchFP:fp})}); const d=await r.json(); const tb=document.getElementById('activeTbody'); tb.innerHTML=""; if(d.data.attendance.length) tb.innerHTML+=`<tr><td colspan="4" class="text-center bg-blue-50 font-bold p-3 text-blue-800">أيام الحضور المسجلة: ${d.data.attendance.length}</td></tr>`; d.data.transactions.forEach(x=>tb.innerHTML+=`<tr><td>${x.type}</td><td class="font-bold">${x.amount}</td><td class="text-xs">${x.reason}</td><td class="font-mono text-xs">${x.date}</td></tr>`); }
+        
+        async function openAddUserModal(){ showModal("إضافة موظف جديد",`<input id="uCode" class="input-field mb-2" placeholder="الرمز الوظيفي"><input id="uFp" class="input-field mb-2" placeholder="رقم البصمة"><input id="uName" class="input-field mb-2" placeholder="الاسم الكامل"><input id="uSec" class="input-field mb-2" placeholder="القسم"><div class="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-2 rounded"><label><input type="checkbox" id="pF"> صلاحية الغرامات</label><label><input type="checkbox" id="pB"> صلاحية المكافآت</label><label><input type="checkbox" id="pR"> صلاحية النسب</label><label><input type="checkbox" id="pH"> صلاحية HR</label><label><input type="checkbox" id="pA"> صلاحية Admin</label></div>`,async()=>{ const d={code:document.getElementById('uCode').value,fp:document.getElementById('uFp').value,name:document.getElementById('uName').value,sec:document.getElementById('uSec').value,pFine:document.getElementById('pF').checked?'نعم':'لا',pBonus:document.getElementById('pB').checked?'نعم':'لا',pRatio:document.getElementById('pR').checked?'نعم':'لا',pHR:document.getElementById('pH').checked?'نعم':'لا',pAdmin:document.getElementById('pA').checked?'نعم':'لا'}; await fetch(API_URL,{method:'POST',body:JSON.stringify({action:"manage_users",subAction:"add",userData:d})}); closeModal(); openSettings(); showToast("تم إضافة الموظف"); }); }
+        
+        async function openSettings(){ hideAll(); document.getElementById('settingsSection').classList.remove('hidden'); const r=await fetch(API_URL,{method:'POST',body:JSON.stringify({action:"manage_users",subAction:"get_all"})}); const d=await r.json(); const tb=document.getElementById('usersBody'); tb.innerHTML=""; d.data.forEach(u=>tb.innerHTML+=`<tr><td>${u.code}</td><td>${u.fp}</td><td>${u.name}</td><td>${u.sec}</td><td class="text-xs text-gray-500">Fine:${u.pFine}|HR:${u.pHR}</td><td><button onclick="if(confirm('حذف المستخدم؟'))fetch(API_URL,{method:'POST',body:JSON.stringify({action:'manage_users',subAction:'delete',row:'${u.row}'})}).then(()=>openSettings())" class="text-red-500 bg-red-50 p-2 rounded"><i class="fas fa-trash"></i></button></td></tr>`); }
+    </script>
+</body>
+</html>
